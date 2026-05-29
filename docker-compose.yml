@@ -1,0 +1,49 @@
+version: '3.9'
+
+services:
+
+  postgres:
+
+    image: postgres:16
+
+    container_name: ajosures_postgres
+
+    environment:
+
+      POSTGRES_DB: ajosures
+
+      POSTGRES_USER: postgres
+
+      POSTGRES_PASSWORD: password
+
+    ports:
+
+      - "5432:5432"
+
+  backend:
+
+    build: ./backend
+
+    container_name: ajosures_backend
+
+    ports:
+
+      - "8080:8080"
+
+    depends_on:
+
+      - postgres
+
+  frontend:
+
+    build: ./frontend
+
+    container_name: ajosures_frontend
+
+    ports:
+
+      - "5173:5173"
+
+    depends_on:
+
+      - backend
