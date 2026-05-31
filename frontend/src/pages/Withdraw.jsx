@@ -1,255 +1,112 @@
-import { useEffect, useState } from 'react'
-
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { showSuccess, showError, showLoading, dismissToast } from '../lib/toast'
 
 function Withdraw() {
 
-  const [walletBalance, setWalletBalance] =
-    useState(0)
-
-  const [amount, setAmount] =
-    useState('')
-
-  const [bankName, setBankName] =
-    useState('')
-
-  const [accountNumber, setAccountNumber] =
-    useState('')
-
-  const [accountName, setAccountName] =
-    useState('')
-
-  const [loading, setLoading] =
-    useState(false)
-
-  const [pageLoading, setPageLoading] =
-    useState(true)
+  const navigate = useNavigate()
+  const [walletBalance, setWalletBalance] = useState(0)
+  const [amount, setAmount] = useState('')
+  const [bankName, setBankName] = useState('')
+  const [accountNumber, setAccountNumber] = useState('')
+  const [accountName, setAccountName] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [pageLoading, setPageLoading] = useState(true)
 
   // FETCH WALLET
   const fetchWallet = async () => {
-
     try {
-
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) {
-
-        window.location.href = '/'
-
-        return
-
-      }
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { navigate('/login'); return }
 
       const { data, error } = await supabase
-        .from('wallets')
-        .select('*')
-        .eq('user_id', user.id)
-        .single()
+        .from('wallets').select('*').eq('user_id', user.id).single()
 
-      if (error) {
-
-        console.log(error)
-
-      }
-
-      if (data) {
-
-        setWalletBalance(data.balance)
-
-      }
+      if (error) { showError('Could not fetch wallet balance.'); return }
+      if (data) setWalletBalance(data.balance)
 
     } catch (error) {
-
-      console.log(error)
-
+      showError(error.message)
     } finally {
-
       setPageLoading(false)
-
     }
-
   }
 
   // LOAD WALLET
-  useEffect(() => {
+  useState(() => { fetchWallet() }, [])
 
-  const loadWallet = async () => {
-
-    await fetchWallet()
-
-  }
-
-  loadWallet()
-
-}, [])
-
-  // HANDLE WITHDRAW
+  // HANDLE WITHDRAW — now submits to `withdrawals` table (pending admin approval)
   const handleWithdraw = async (e) => {
-
     e.preventDefault()
+    const withdrawAmount = Number(amount)
+
+    if (withdrawAmount <= 0) { showError('Please enter a valid amount.'); return }
+    if (withdrawAmount > walletBalance) { showError('Insufficient wallet balance.'); return }
 
     setLoading(true)
+    const toastId = showLoading('Submitting withdrawal request...')
 
     try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { dismissToast(toastId); showError('Session expired. Please log in again.'); return }
 
-      const withdrawAmount =
-        Number(amount)
+      const bankDetails = { bankName, accountNumber, accountName }
 
-      if (
-        withdrawAmount <= 0
-      ) {
+      // Submit withdrawal request (pending admin approval)
+      const { error } = await supabase
+        .from('withdrawals')
+        .insert({
+          user_id: user.id,
+          amount: withdrawAmount,
+          bank_details: bankDetails,
+          status: 'pending',
+        })
 
-        alert('Enter valid amount')
+      dismissToast(toastId)
 
-        setLoading(false)
+      if (error) { showError(error.message); return }
 
-        return
-
-      }
-
-      if (
-        withdrawAmount >
-        walletBalance
-      ) {
-
-        alert('Insufficient balance')
-
-        setLoading(false)
-
-        return
-
-      }
-
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
-      if (!user) {
-
-        alert('User not found')
-
-        setLoading(false)
-
-        return
-
-      }
-
-      // UPDATE WALLET
-      const newBalance =
-        walletBalance -
-        withdrawAmount
-
-      const { error: walletError } =
-        await supabase
-          .from('wallets')
-          .update({
-            balance: newBalance,
-          })
-          .eq('user_id', user.id)
-
-      if (walletError) {
-
-        alert(walletError.message)
-
-        setLoading(false)
-
-        return
-
-      }
-
-      // SAVE TRANSACTION
-      const { error: txError } =
-        await supabase
-          .from('transactions')
-          .insert([
-            {
-              user_id: user.id,
-              type: 'withdraw',
-              amount: withdrawAmount,
-              status: 'success',
-              description:
-                `Withdrawal to ${bankName}`,
-            },
-          ])
-
-      if (txError) {
-
-        console.log(txError)
-
-      }
-
-      // REFRESH WALLET
-      setWalletBalance(newBalance)
-
-      // RESET FORM
+      // Reset form
       setAmount('')
       setBankName('')
       setAccountNumber('')
       setAccountName('')
 
-      alert(
-        'Withdrawal successful'
-      )
+      showSuccess('Withdrawal request submitted successfully. Pending admin approval.')
 
     } catch (error) {
-
-      console.log(error)
-
-      alert('Something went wrong')
-
+      dismissToast(toastId)
+      showError(error.message || 'Something went wrong. Please try again.')
     } finally {
-
       setLoading(false)
-
     }
-
   }
 
   if (pageLoading) {
-
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-
-        <p className="text-gray-500">
-          Loading wallet...
-        </p>
-
+        <p className="text-gray-500">Loading wallet...</p>
       </div>
     )
-
   }
 
   return (
     <div className="min-h-screen bg-gray-50 px-6 py-8">
-
       <div className="max-w-md mx-auto">
 
-        <h1 className="text-3xl font-bold text-blue-600">
-          Withdraw Funds
-        </h1>
+        <h1 className="text-3xl font-bold text-blue-600">Withdraw Funds</h1>
 
-        <p className="text-gray-500 mt-2">
-          Available Balance:
-        </p>
+        <p className="text-gray-500 mt-2">Available Balance:</p>
+        <h2 className="text-4xl font-bold mt-2">₦{Number(walletBalance).toLocaleString()}</h2>
 
-        <h2 className="text-4xl font-bold mt-2">
-          ₦{Number(walletBalance).toLocaleString()}
-        </h2>
-
-        <form
-          onSubmit={handleWithdraw}
-          className="bg-white rounded-3xl p-6 shadow-sm mt-8 space-y-5"
-        >
+        <form onSubmit={handleWithdraw} className="bg-white rounded-3xl p-6 shadow-sm mt-8 space-y-5">
 
           <input
             type="number"
-            placeholder="Amount"
+            placeholder="Amount (₦)"
             value={amount}
-            onChange={(e) =>
-              setAmount(e.target.value)
-            }
+            onChange={(e) => setAmount(e.target.value)}
             required
             className="w-full border border-gray-300 rounded-2xl px-4 py-4 outline-none focus:border-blue-600"
           />
@@ -258,9 +115,7 @@ function Withdraw() {
             type="text"
             placeholder="Bank Name"
             value={bankName}
-            onChange={(e) =>
-              setBankName(e.target.value)
-            }
+            onChange={(e) => setBankName(e.target.value)}
             required
             className="w-full border border-gray-300 rounded-2xl px-4 py-4 outline-none focus:border-blue-600"
           />
@@ -269,11 +124,7 @@ function Withdraw() {
             type="text"
             placeholder="Account Number"
             value={accountNumber}
-            onChange={(e) =>
-              setAccountNumber(
-                e.target.value
-              )
-            }
+            onChange={(e) => setAccountNumber(e.target.value)}
             required
             className="w-full border border-gray-300 rounded-2xl px-4 py-4 outline-none focus:border-blue-600"
           />
@@ -282,11 +133,7 @@ function Withdraw() {
             type="text"
             placeholder="Account Name"
             value={accountName}
-            onChange={(e) =>
-              setAccountName(
-                e.target.value
-              )
-            }
+            onChange={(e) => setAccountName(e.target.value)}
             required
             className="w-full border border-gray-300 rounded-2xl px-4 py-4 outline-none focus:border-blue-600"
           />
@@ -296,17 +143,12 @@ function Withdraw() {
             disabled={loading}
             className="w-full bg-red-600 hover:bg-red-700 transition text-white py-4 rounded-2xl font-semibold"
           >
-
-            {loading
-              ? 'Processing...'
-              : 'Withdraw Funds'}
-
+            {loading ? 'Processing...' : 'Request Withdrawal'}
           </button>
 
         </form>
 
       </div>
-
     </div>
   )
 }

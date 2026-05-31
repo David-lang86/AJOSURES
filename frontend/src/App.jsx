@@ -16,111 +16,131 @@ import Wallet from './pages/Wallet'
 import Withdraw from './pages/Withdraw'
 import Transactions from './pages/Transactions'
 import Profile from './pages/Profile'
-import FlutterwavePayment
-from './pages/FlutterwavePayment'
+import FlutterwavePayment from './pages/FlutterwavePayment'
 
-import AdminDashboard
-from './pages/AdminDashboard'
+import AdminDashboard from './pages/AdminDashboard'
+import AdminWithdrawals from './pages/AdminWithdrawals'
+import AdminPayouts from './pages/AdminPayouts'
 
-import AdminWithdrawals
-from './pages/AdminWithdrawals'
+import NotFound from './pages/NotFound'
+import ResetPassword from './pages/ResetPassword'
+import UpdatePassword from './pages/UpdatePassword'
 
-import AdminPayouts
-from './pages/AdminPayouts'
+import ErrorBoundary from './components/ErrorBoundary'
 
 function App() {
 
   return (
 
-    <BrowserRouter>
+    <ErrorBoundary>
 
-      <Routes>
+      <BrowserRouter>
 
-        <Route
-          path="/"
-          element={<Dashboard />}
-        />
+        <Routes>
 
-        <Route
-          path="/login"
-          element={<Login />}
-        />
+          <Route
+            path="/"
+            element={<Dashboard />}
+          />
 
-        <Route
-          path="/signup"
-          element={<Signup />}
-        />
+          <Route
+            path="/login"
+            element={<Login />}
+          />
 
-        <Route
-          path="/create-group"
-          element={<CreateGroup />}
-        />
+          <Route
+            path="/signup"
+            element={<Signup />}
+          />
 
-        <Route
-          path="/join-group"
-          element={<JoinGroup />}
-        />
+          <Route
+            path="/create-group"
+            element={<CreateGroup />}
+          />
 
-        <Route
-          path="/group/:id"
-          element={<GroupDetails />}
-        />
+          <Route
+            path="/join-group"
+            element={<JoinGroup />}
+          />
 
-        <Route
-          path="/group-chat/:id"
-          element={<GroupChat />}
-        />
+          <Route
+            path="/group/:id"
+            element={<GroupDetails />}
+          />
 
-        <Route
-          path="/notifications"
-          element={<Notifications />}
-        />
+          <Route
+            path="/group-chat/:id"
+            element={<GroupChat />}
+          />
 
-        <Route
-          path="/wallet"
-          element={<Wallet />}
-        />
+          <Route
+            path="/notifications"
+            element={<Notifications />}
+          />
 
-        <Route
-          path="/withdraw"
-          element={<Withdraw />}
-        />
+          <Route
+            path="/wallet"
+            element={<Wallet />}
+          />
 
-        <Route
-          path="/transactions"
-          element={<Transactions />}
-        />
+          <Route
+            path="/withdraw"
+            element={<Withdraw />}
+          />
 
-        <Route
-          path="/profile"
-          element={<Profile />}
-        />
+          <Route
+            path="/transactions"
+            element={<Transactions />}
+          />
 
-        <Route
-          path="/fund-wallet"
-          element={<FlutterwavePayment />}
-        />
+          <Route
+            path="/profile"
+            element={<Profile />}
+          />
 
-        {/* ADMIN */}
+          <Route
+            path="/fund-wallet"
+            element={<FlutterwavePayment />}
+          />
 
-        <Route
-          path="/admin-dashboard"
-          element={<AdminDashboard />}
-        />
+          <Route
+            path="/reset-password"
+            element={<ResetPassword />}
+          />
 
-        <Route
-          path="/admin-withdrawals"
-          element={<AdminWithdrawals />}
-        />
+          <Route
+            path="/update-password"
+            element={<UpdatePassword />}
+          />
 
-        <Route
-          path="/admin-payouts"
-          element={<AdminPayouts />}
-        />
+          {/* ADMIN */}
 
-      </Routes>
+          <Route
+            path="/admin-dashboard"
+            element={<AdminDashboard />}
+          />
 
-    </BrowserRouter>
+          <Route
+            path="/admin-withdrawals"
+            element={<AdminWithdrawals />}
+          />
+
+          <Route
+            path="/admin-payouts"
+            element={<AdminPayouts />}
+          />
+
+          {/* 404 */}
+          <Route
+            path="*"
+            element={<NotFound />}
+          />
+
+        </Routes>
+
+      </BrowserRouter>
+
+    </ErrorBoundary>
 
   )
 

@@ -12,6 +12,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 
 import { supabase } from '../lib/supabase'
+import { showSuccess, showError } from '../lib/toast'
 
 function Profile() {
 
@@ -50,11 +51,10 @@ function Profile() {
 
   // LOGOUT
   const handleLogout = async () => {
-
-    await supabase.auth.signOut()
-
+    const { error } = await supabase.auth.signOut()
+    if (error) { showError(error.message); return }
+    showSuccess('Logged out successfully.')
     navigate('/')
-
   }
 
   useEffect(() => {
