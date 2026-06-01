@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { showSuccess, showError, showLoading, dismissToast } from '../lib/toast'
@@ -34,7 +34,7 @@ function Withdraw() {
   }
 
   // LOAD WALLET
-  useState(() => { fetchWallet() }, [])
+  useEffect(() => { fetchWallet() }, [])
 
   // HANDLE WITHDRAW — now submits to `withdrawals` table (pending admin approval)
   const handleWithdraw = async (e) => {

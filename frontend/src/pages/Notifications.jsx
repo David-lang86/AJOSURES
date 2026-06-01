@@ -57,46 +57,41 @@ function Notifications() {
   useEffect(() => {
 
     let mounted = true
+    let channel
 
     const loadData = async () => {
 
-      if (mounted) {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user || !mounted) return
 
-        await fetchNotifications()
+      const uid = user.id
 
-      }
+      if (mounted) await fetchNotifications()
 
-    }
-
-    loadData()
-
-    const channel =
-      supabase
-        .channel('notifications-live')
+      channel = supabase
+        .channel(`notifications-live-${uid}`)
         .on(
           'postgres_changes',
           {
             event: '*',
             schema: 'public',
             table: 'notifications',
+            filter: `user_id=eq.${uid}`,
           },
           async () => {
-
-            if (mounted) {
-
-              await fetchNotifications()
-
-            }
-
+            if (mounted) await fetchNotifications()
           }
         )
         .subscribe()
 
+    }
+
+    loadData()
+
     return () => {
 
       mounted = false
-
-      supabase.removeChannel(channel)
+      if (channel) supabase.removeChannel(channel)
 
     }
 

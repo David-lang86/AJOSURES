@@ -1,10 +1,12 @@
 import { useEffect, useState, useCallback } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { showSuccess, showError, showLoading, dismissToast } from '../lib/toast'
 import jsPDF from 'jspdf'
 
 function Transactions() {
 
+  const navigate = useNavigate()
   const [transactions, setTransactions] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -12,7 +14,7 @@ function Transactions() {
     const loadTransactions = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser()
-        if (!user) { window.location.href = '/'; return }
+        if (!user) { navigate('/login'); return }
 
         const { data, error } = await supabase
           .from('transactions')

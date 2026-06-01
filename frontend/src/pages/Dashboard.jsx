@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 import {
   Home,
@@ -13,11 +13,14 @@ import {
   useEffect,
   useState,
   useCallback,
+  useRef,
 } from 'react'
 
 import { supabase } from '../lib/supabase'
 
 function Dashboard() {
+
+  const navigate = useNavigate()
 
   const [fullName, setFullName] =
     useState('User')
@@ -35,6 +38,8 @@ function Dashboard() {
   const [loading, setLoading] =
     useState(true)
 
+  const userIdRef = useRef(null)
+
   const fetchDashboard =
     useCallback(async () => {
 
@@ -46,7 +51,7 @@ function Dashboard() {
 
         if (!user) {
 
-          window.location.href = '/'
+          navigate('/login')
 
           return
 
@@ -156,82 +161,69 @@ function Dashboard() {
 
 }, [fetchDashboard])
 
-  // REALTIME SUBSCRIPTIONS
+  // REALTIME SUBSCRIPTIONS — scoped per user to prevent cross-user glitches
   useEffect(() => {
 
-    const walletChannel =
-      supabase
-        .channel('wallet-live')
+    let walletChannel, transactionChannel, notificationChannel
 
+    const setupChannels = async () => {
+
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const uid = user.id
+
+      walletChannel = supabase
+        .channel(`wallet-live-${uid}`)
         .on(
           'postgres_changes',
           {
             event: '*',
             schema: 'public',
             table: 'wallets',
+            filter: `user_id=eq.${uid}`,
           },
-          () => {
-
-            fetchDashboard()
-
-          }
+          () => { fetchDashboard() }
         )
-
         .subscribe()
 
-    const transactionChannel =
-      supabase
-        .channel('transactions-live')
-
+      transactionChannel = supabase
+        .channel(`transactions-live-${uid}`)
         .on(
           'postgres_changes',
           {
             event: '*',
             schema: 'public',
             table: 'transactions',
+            filter: `user_id=eq.${uid}`,
           },
-          () => {
-
-            fetchDashboard()
-
-          }
+          () => { fetchDashboard() }
         )
-
         .subscribe()
 
-    const notificationChannel =
-      supabase
-        .channel('notifications-live')
-
+      notificationChannel = supabase
+        .channel(`notifications-dash-${uid}`)
         .on(
           'postgres_changes',
           {
             event: '*',
             schema: 'public',
             table: 'notifications',
+            filter: `user_id=eq.${uid}`,
           },
-          () => {
-
-            fetchDashboard()
-
-          }
+          () => { fetchDashboard() }
         )
-
         .subscribe()
+
+    }
+
+    setupChannels()
 
     return () => {
 
-      supabase.removeChannel(
-        walletChannel
-      )
-
-      supabase.removeChannel(
-        transactionChannel
-      )
-
-      supabase.removeChannel(
-        notificationChannel
-      )
+      if (walletChannel) supabase.removeChannel(walletChannel)
+      if (transactionChannel) supabase.removeChannel(transactionChannel)
+      if (notificationChannel) supabase.removeChannel(notificationChannel)
 
     }
 
