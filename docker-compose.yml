@@ -10,25 +10,37 @@ services:
 
     environment:
 
-      POSTGRES_DB: ajosures
+      POSTGRES_DB: ${DB_NAME}
 
-      POSTGRES_USER: postgres
+      POSTGRES_USER: ${DB_USERNAME}
 
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
 
     ports:
 
-      - "5432:5432"
+      - "${DB_PORT}:5432"
 
   backend:
 
-    build: ./backend
+    build: ./backend/backend
 
     container_name: ajosures_backend
 
     ports:
 
       - "8080:8080"
+
+    environment:
+
+      DB_HOST: postgres
+
+      DB_PORT: 5432
+
+      DB_NAME: ${DB_NAME}
+
+      DB_USERNAME: ${DB_USERNAME}
+
+      DB_PASSWORD: ${DB_PASSWORD}
 
     depends_on:
 
